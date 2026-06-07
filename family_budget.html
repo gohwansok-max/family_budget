@@ -433,13 +433,16 @@ const DEFAULT_CATEGORIES = [
   { id:'etc',     name:'기타',    icon:'📦', limit:100000 },
 ];
 
+// ★ Apps Script 웹앱 URL (한 번 설정하면 파일에 영구 저장됨)
+const HARDCODED_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzFW8xnC5wKJtWTgxCxZPlEpZQ-i8WEmvpLY2JZCcVrcQO_qYufFB8atEBf73MX7aNj1g/exec';
+
 let state = {
   currentTab: 'dashboard',
   currentMonth: new Date().toISOString().slice(0,7), // YYYY-MM
   txType: 'expense',
   categories: [],
   records: [],
-  sheetUrl: '',
+  sheetUrl: HARDCODED_SHEET_URL,
   sheetId: '',
   loaded: false,
 };
@@ -458,7 +461,8 @@ function loadLocal() {
   const recs = localStorage.getItem('gahb_records');
   state.categories = cats ? JSON.parse(cats) : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
   state.records    = recs ? JSON.parse(recs) : [];
-  state.sheetUrl   = localStorage.getItem('gahb_sheetUrl') || '';
+  // localStorage 우선, 없으면 파일에 하드코딩된 URL 사용
+  state.sheetUrl   = localStorage.getItem('gahb_sheetUrl') || HARDCODED_SHEET_URL;
   state.sheetId    = localStorage.getItem('gahb_sheetId')  || '';
 }
 
