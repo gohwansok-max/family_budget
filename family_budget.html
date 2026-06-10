@@ -536,7 +536,7 @@ async function syncData() {
   const btn = document.querySelector('.sync-btn');
   btn.textContent = '동기화 중…'; btn.disabled = true;
   try {
-    const res = await fetch(state.sheetUrl + '?action=read', { mode:'cors' });
+    const res = await fetch(state.sheetUrl + '?action=read', { redirect:'follow' });
     if (!res.ok) throw new Error();
     const data = await res.json();
     if (data.records)    state.records    = data.records;
@@ -545,17 +545,17 @@ async function syncData() {
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
     renderTab(); showToast('✓ 동기화 완료!', 'success');
-  } catch(e) { showToast('❌ 동기화 실패', 'error'); }
+  } catch(e) { showToast('❌ 동기화 실패. URL을 확인해주세요.', 'error'); }
   finally { btn.textContent = '↻ 동기화'; btn.disabled = false; }
 }
 
 async function pushToSheets(record) {
   if (!state.sheetUrl) return;
-  try { await fetch(state.sheetUrl+'?action=write',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'record',data:record})}); } catch(e){}
+  try { await fetch(state.sheetUrl+'?action=write',{method:'POST',redirect:'follow',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'record',data:record})}); } catch(e){}
 }
 async function pushCatsToSheets() {
   if (!state.sheetUrl) return;
-  try { await fetch(state.sheetUrl+'?action=write',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'categories',data:state.categories})}); } catch(e){}
+  try { await fetch(state.sheetUrl+'?action=write',{method:'POST',redirect:'follow',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'categories',data:state.categories})}); } catch(e){}
 }
 
 function won(n) { return n.toLocaleString('ko-KR') + '원'; }
@@ -950,7 +950,7 @@ function hideDeleteConfirm() { _pendingDeleteId=null; document.getElementById('d
 async function confirmDelete() {
   const id=_pendingDeleteId; hideDeleteConfirm(); if(!id) return;
   state.records=state.records.filter(r=>r.id!==id); saveLocal(); renderTab(); showToast('🗑 삭제되었습니다');
-  if(state.sheetUrl){ try{ await fetch(state.sheetUrl+'?action=write',{method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'record',data:{id,_delete:true}})}); }catch(e){} }
+  if(state.sheetUrl){ try{ await fetch(state.sheetUrl+'?action=write',{method:'POST',redirect:'follow',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'record',data:{id,_delete:true}})}); }catch(e){} }
 }
 
 function filterCat(id) {
@@ -1012,8 +1012,20 @@ window.addEventListener('popstate', () => {
 loadLocal();
 history.replaceState({page:'dashboard'},'','');
 renderTab();
-// 앱 시작 시 자동 동기화 (1초 딜레이)
-if (state.sheetUrl) setTimeout(syncData, 1000);
+// 앱 시작 시 자동 동기화 (실패해도 조용히 넘어감)
+if (state.sheetUrl) setTimeout(async () => {
+  try {
+    const res = await fetch(state.sheetUrl + '?action=read', { redirect:'follow' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.records)    state.records    = data.records;
+    if (data.categories) state.categories = data.categories;
+    saveLocal();
+    const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
+    renderTab();
+  } catch(e) { /* 자동 동기화 실패 시 조용히 무시 */ }
+}, 1500);
 </script>
 </body>
 </html>
