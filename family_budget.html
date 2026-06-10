@@ -525,7 +525,8 @@ function loadLocal() {
   const cats  = localStorage.getItem('gahb_categories');
   const recs  = localStorage.getItem('gahb_records');
   const autos = localStorage.getItem('gahb_autoTransfers');
-  state.categories    = cats  ? JSON.parse(cats)  : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+  const parsedCats = cats ? JSON.parse(cats) : [];
+  state.categories = parsedCats.length > 0 ? parsedCats : JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
   state.records       = recs  ? JSON.parse(recs)  : [];
   state.autoTransfers = autos ? JSON.parse(autos) : [];
   state.sheetUrl      = localStorage.getItem('gahb_sheetUrl') || '';
@@ -549,8 +550,8 @@ async function syncData() {
   btn.textContent = '동기화 중…'; btn.disabled = true;
   try {
     const data = await jsonpFetch(state.sheetUrl + '?action=read');
-    if (data.records)    state.records    = data.records;
-    if (data.categories) state.categories = data.categories;
+    if (data.records    && data.records.length    > 0) state.records    = data.records;
+    if (data.categories && data.categories.length > 0) state.categories = data.categories;
     saveLocal();
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
@@ -1026,8 +1027,8 @@ renderTab();
 if (state.sheetUrl) setTimeout(async () => {
   try {
     const data = await jsonpFetch(state.sheetUrl + '?action=read');
-    if (data.records)    state.records    = data.records;
-    if (data.categories) state.categories = data.categories;
+    if (data.records    && data.records.length    > 0) state.records    = data.records;
+    if (data.categories && data.categories.length > 0) state.categories = data.categories;
     saveLocal();
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
