@@ -1012,8 +1012,8 @@ window.addEventListener('popstate', () => {
 loadLocal();
 history.replaceState({page:'dashboard'},'','');
 renderTab();
-// 앱 시작 시 자동 동기화
-if (state.sheetUrl) syncData();
+// 앱 시작 시 자동 동기화 (1초 딜레이)
+if (state.sheetUrl) setTimeout(syncData, 1000);
 </script>
 </body>
 </html>
