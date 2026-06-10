@@ -984,7 +984,7 @@ function showToast(msg, type='') {
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>{el.className='toast';},2500);
 }
 
-document.addEventListener('click', e=>{ if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+// 외부 클릭으로 모달 닫기 비활성화 — 버튼으로만 닫힘
 
 const inIframe = window.self !== window.top;
 function pushHistory(s) { if(inIframe) return; try{history.pushState({page:s},'','');}catch(e){} }
