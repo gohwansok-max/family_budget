@@ -550,8 +550,9 @@ async function syncData() {
   btn.textContent = '동기화 중…'; btn.disabled = true;
   try {
     const data = await jsonpFetch(state.sheetUrl + '?action=read');
-    if (data.records    && data.records.length    > 0) state.records    = data.records;
-    if (data.categories && data.categories.length > 0) state.categories = data.categories;
+    if (data.records       && data.records.length       > 0) state.records       = data.records;
+    if (data.categories    && data.categories.length    > 0) state.categories    = data.categories;
+    if (data.autoTransfers && data.autoTransfers.length > 0) state.autoTransfers = data.autoTransfers;
     saveLocal();
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
@@ -567,6 +568,10 @@ async function pushToSheets(record) {
 async function pushCatsToSheets() {
   if (!state.sheetUrl) return;
   try { await fetch(state.sheetUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({records:state.records,categories:state.categories})}); } catch(e){}
+}
+async function pushAutoTransfersToSheets() {
+  if (!state.sheetUrl) return;
+  try { await fetch(state.sheetUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({autoTransfers:state.autoTransfers})}); } catch(e){}
 }
 
 function won(n) { return n.toLocaleString('ko-KR') + '원'; }
@@ -745,13 +750,13 @@ function submitAutoTransfer() {
   if (!day || day<1 || day>31)     { showToast('날짜를 1~31 사이로 입력해주세요', 'error'); return; }
   if (!amount || amount<=0)        { showToast('금액을 입력해주세요', 'error'); return; }
   state.autoTransfers.push({ id:Date.now().toString(36)+Math.random().toString(36).slice(2,5), bank, name, day, amount });
-  saveLocal(); closeModal('autoModal'); renderTab();
+  saveLocal(); pushAutoTransfersToSheets(); closeModal('autoModal'); renderTab();
   showToast('✓ 자동이체가 등록되었습니다', 'success');
 }
 
 function deleteAutoTransfer(id) {
   state.autoTransfers = state.autoTransfers.filter(a=>a.id!==id);
-  saveLocal(); renderTab(); showToast('🗑 삭제되었습니다');
+  saveLocal(); pushAutoTransfersToSheets(); renderTab(); showToast('🗑 삭제되었습니다');
 }
 
 function renderBudget() {
@@ -1027,8 +1032,9 @@ renderTab();
 if (state.sheetUrl) setTimeout(async () => {
   try {
     const data = await jsonpFetch(state.sheetUrl + '?action=read');
-    if (data.records    && data.records.length    > 0) state.records    = data.records;
-    if (data.categories && data.categories.length > 0) state.categories = data.categories;
+    if (data.records       && data.records.length       > 0) state.records       = data.records;
+    if (data.categories    && data.categories.length    > 0) state.categories    = data.categories;
+    if (data.autoTransfers && data.autoTransfers.length > 0) state.autoTransfers = data.autoTransfers;
     saveLocal();
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
