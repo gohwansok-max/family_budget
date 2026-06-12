@@ -544,21 +544,28 @@ function jsonpFetch(url) {
   });
 }
 
+let _syncInProgress = false;
+function dedupeById(arr) {
+  const seen = new Set();
+  return arr.filter(x => { if (seen.has(x.id)) return false; seen.add(x.id); return true; });
+}
 async function syncData() {
+  if (_syncInProgress) { showToast('⏳ 동기화 중입니다...'); return; }
   if (!state.sheetUrl) { showToast('⚙️ 설정에서 Google Sheets URL을 먼저 입력하세요', 'error'); switchTab('settings'); return; }
+  _syncInProgress = true;
   const btn = document.querySelector('.sync-btn');
   btn.textContent = '동기화 중…'; btn.disabled = true;
   try {
     const data = await jsonpFetch(state.sheetUrl + '?action=read');
-    if (data.records       && data.records.length       > 0) state.records       = data.records;
-    if (data.categories    && data.categories.length    > 0) state.categories    = data.categories;
-    if (data.autoTransfers && data.autoTransfers.length > 0) state.autoTransfers = data.autoTransfers;
+    if (data.records       && data.records.length       > 0) state.records       = dedupeById(data.records);
+    if (data.categories    && data.categories.length    > 0) state.categories    = dedupeById(data.categories);
+    if (data.autoTransfers && data.autoTransfers.length > 0) state.autoTransfers = dedupeById(data.autoTransfers);
     saveLocal();
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
     renderTab(); showToast('✓ 동기화 완료!', 'success');
   } catch(e) { showToast('❌ 동기화 실패. URL을 확인해주세요.', 'error'); }
-  finally { btn.textContent = '↻ 동기화'; btn.disabled = false; }
+  finally { btn.textContent = '↻ 동기화'; btn.disabled = false; _syncInProgress = false; }
 }
 
 async function pushToSheets(record) {
@@ -1030,16 +1037,19 @@ history.replaceState({page:'dashboard'},'','');
 renderTab();
 // 앱 시작 시 자동 동기화 (실패해도 조용히 넘어감)
 if (state.sheetUrl) setTimeout(async () => {
+  if (_syncInProgress) return;
+  _syncInProgress = true;
   try {
     const data = await jsonpFetch(state.sheetUrl + '?action=read');
-    if (data.records       && data.records.length       > 0) state.records       = data.records;
-    if (data.categories    && data.categories.length    > 0) state.categories    = data.categories;
-    if (data.autoTransfers && data.autoTransfers.length > 0) state.autoTransfers = data.autoTransfers;
+    if (data.records       && data.records.length       > 0) state.records       = dedupeById(data.records);
+    if (data.categories    && data.categories.length    > 0) state.categories    = dedupeById(data.categories);
+    if (data.autoTransfers && data.autoTransfers.length > 0) state.autoTransfers = dedupeById(data.autoTransfers);
     saveLocal();
     const now = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('lastSync').textContent = `마지막 동기화: ${now}`;
     renderTab();
   } catch(e) { /* 자동 동기화 실패 시 조용히 무시 */ }
+  finally { _syncInProgress = false; }
 }, 1500);
 </script>
 </body>
